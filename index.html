@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Kelsey Archive</title>
+<meta name="description" content="Find item locations in the Kelsey physical archive" />
+<meta name="theme-color" content="#009C95" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Archive" />
+
+<link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <img src="icons/icon-192.png" alt="" class="app-logo" />
+  <h1>Kelsey Archive</h1>
+  <span id="connStatus" class="conn-status conn-offline" title="Connecting...">●</span>
+</header>
+
+<main>
+
+  <!-- FIND -->
+  <section id="tab-find" class="tab-panel active">
+    <div class="search-bar">
+      <input id="searchInput" type="search" inputmode="search" placeholder="Search keyword, description or product code..." autocomplete="off" />
+    </div>
+    <p id="resultsSummary" class="muted small"></p>
+    <ul id="resultsList" class="results-list"></ul>
+
+    <div id="itemDetail" class="item-detail hidden">
+      <div class="item-detail-header">
+        <div>
+          <div id="itemDetailLocation" class="location-pill"></div>
+          <div id="itemDetailDesc" class="item-desc"></div>
+          <div id="itemDetailCode" class="muted small"></div>
+        </div>
+        <div class="item-detail-actions">
+          <button id="editItemBtn" class="btn btn-small">Edit</button>
+          <button id="deleteItemBtn" class="btn btn-small btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="plan-panel">
+      <div class="plan-panel-header">
+        <label for="planZoneSelect" class="muted small">Zone</label>
+        <select id="planZoneSelect"></select>
+      </div>
+      <div id="planContainer" class="plan-container"></div>
+    </div>
+  </section>
+
+  <!-- ADD -->
+  <section id="tab-add" class="tab-panel">
+    <h2>Add an item</h2>
+    <form id="addForm" class="stack-form">
+      <label>Item name / description
+        <input id="addDescription" type="text" required placeholder="e.g. Motor Cycle Vol150 Jan Mar 1983" />
+      </label>
+      <label>Product code <span class="muted small">(optional)</span>
+        <input id="addProductCode" type="text" placeholder="e.g. MC-150" />
+      </label>
+
+      <div class="location-fields">
+        <label>Zone
+          <select id="addZone" required></select>
+        </label>
+        <label>Aisle
+          <select id="addAisle" required></select>
+        </label>
+        <label>Bay
+          <select id="addBay" required></select>
+        </label>
+        <label>Shelf
+          <input id="addShelf" type="text" maxlength="3" required placeholder="A" style="text-transform:uppercase" />
+        </label>
+      </div>
+
+      <p id="addLocationPreview" class="muted small"></p>
+      <button type="submit" class="btn btn-primary">Add item</button>
+      <p id="addStatus" class="status-msg" role="status"></p>
+    </form>
+  </section>
+
+  <!-- UPLOAD -->
+  <section id="tab-upload" class="tab-panel">
+    <h2>Upload spreadsheet</h2>
+    <p class="muted small">Accepts .csv or .xlsx with columns <strong>Location</strong>, <strong>Asset description</strong> (or Description), and optionally <strong>Product code</strong>. Location must be in the form Zone-Aisle-Bay-Shelf, e.g. C-04-02-A.</p>
+
+    <form id="uploadForm" class="stack-form">
+      <input id="uploadFile" type="file" accept=".csv,.xlsx,.xls" required />
+
+      <fieldset class="radio-group">
+        <legend>What should this upload do?</legend>
+        <label><input type="radio" name="uploadMode" value="add" checked /> Add to existing data</label>
+        <label><input type="radio" name="uploadMode" value="replace" /> Replace all existing data</label>
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary">Upload</button>
+      <p id="uploadStatus" class="status-msg" role="status"></p>
+      <ul id="uploadSkipped" class="skipped-list"></ul>
+    </form>
+  </section>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="tab-find">Find</button>
+  <button class="nav-btn" data-tab="tab-add">Add</button>
+  <button class="nav-btn" data-tab="tab-upload">Upload</button>
+</nav>
+
+<!-- EDIT MODAL -->
+<div id="editModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>Edit item</h2>
+    <form id="editForm" class="stack-form">
+      <label>Item name / description
+        <input id="editDescription" type="text" required />
+      </label>
+      <label>Product code <span class="muted small">(optional)</span>
+        <input id="editProductCode" type="text" />
+      </label>
+      <div class="location-fields">
+        <label>Zone
+          <select id="editZone" required></select>
+        </label>
+        <label>Aisle
+          <select id="editAisle" required></select>
+        </label>
+        <label>Bay
+          <select id="editBay" required></select>
+        </label>
+        <label>Shelf
+          <input id="editShelf" type="text" maxlength="3" required style="text-transform:uppercase" />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+      <p id="editStatus" class="status-msg" role="status"></p>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="js/zones.js" defer></script>
+<script src="js/floorplan.js" defer></script>
+<script src="js/firebase-config.js" defer></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

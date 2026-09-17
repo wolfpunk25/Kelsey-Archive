@@ -1,0 +1,17 @@
+// 1. Copy this file to js/firebase-config.js
+// 2. Paste the config object from Firebase Console > Project settings >
+//    General > Your apps > SDK setup and configuration.
+// 3. Commit js/firebase-config.js as normal. This is a static site with no
+//    build step or server, so this file has to be published for the app to
+//    work at all - that's fine, a Firebase web config is not a secret; it
+//    just identifies which project to talk to. Access is controlled by the
+//    Firestore security rules in SETUP.md, not by hiding this file.
+
+const FIREBASE_CONFIG = {
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_PROJECT.firebaseapp.com',
+  projectId: 'YOUR_PROJECT',
+  storageBucket: 'YOUR_PROJECT.appspot.com',
+  messagingSenderId: 'YOUR_SENDER_ID',
+  appId: 'YOUR_APP_ID'
+};
