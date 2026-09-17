@@ -307,6 +307,18 @@ h2 { font-size: 1.05rem; margin: 0 0 12px; }
 }
 .pin-gate-form .status-msg { color: #fff2d0; }
 .pin-gate-form .status-msg.err { color: #ffd7d7; }
+.pin-gate-form button {
+  /* .btn-primary is teal-on-teal here (same as the page background) and
+     disappears - give it its own high-contrast look so it reads as a
+     tappable button, not label text. */
+  background: #fff;
+  border-color: #fff;
+  color: var(--teal-dark);
+  font-weight: 700;
+  padding: 12px 14px;
+  font-size: 1.05rem;
+}
+.pin-gate-form button:active { background: #eef6f5; }
 
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
