@@ -1,13 +1,19 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, addDoc, updateDoc, deleteDoc,
   onSnapshot, writeBatch, serverTimestamp, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import {
-  getAuth, signInAnonymously, onAuthStateChanged
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
 const ITEMS_COLLECTION = 'items';
+
+// Every worker signs in with the same shared PIN (as the password on this
+// one fixed account) - see the pin-gate section below and SETUP.md. The
+// email itself is never used to send mail, it just names the account.
+const SHARED_AUTH_EMAIL = 'team@kelsey-archive.app';
 
 let db = null;
 let auth = null;
@@ -15,6 +21,11 @@ let allItems = []; // in-memory cache, kept in sync via onSnapshot
 let selectedItemId = null;
 
 const connStatus = document.getElementById('connStatus');
+const appShell = document.getElementById('appShell');
+const pinGate = document.getElementById('pinGate');
+const pinForm = document.getElementById('pinForm');
+const pinInput = document.getElementById('pinInput');
+const pinStatus = document.getElementById('pinStatus');
 
 function isFirebaseConfigured() {
   return typeof FIREBASE_CONFIG !== 'undefined' &&
@@ -29,23 +40,45 @@ function setConnStatus(state, title) {
 function initFirebase() {
   if (!isFirebaseConfigured()) {
     setConnStatus('offline', 'Firebase is not configured yet - see SETUP.md. Running with no data.');
+    pinGate.classList.add('hidden');
+    appShell.classList.remove('hidden');
     return;
   }
   const app = initializeApp(FIREBASE_CONFIG);
-  db = getFirestore(app);
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
   auth = getAuth(app);
 
   onAuthStateChanged(auth, user => {
     if (user) {
+      pinGate.classList.add('hidden');
+      appShell.classList.remove('hidden');
       setConnStatus('online', 'Connected');
       subscribeToItems();
+    } else {
+      appShell.classList.add('hidden');
+      pinGate.classList.remove('hidden');
+      pinInput.focus();
     }
   });
-  signInAnonymously(auth).catch(err => {
-    console.error('Anonymous sign-in failed', err);
-    setConnStatus('offline', 'Sign-in failed: ' + err.message);
-  });
 }
+
+pinForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const pin = pinInput.value.trim();
+  if (!pin) return;
+  pinStatus.textContent = 'Checking...';
+  pinStatus.className = 'status-msg';
+  try {
+    await signInWithEmailAndPassword(auth, SHARED_AUTH_EMAIL, pin);
+    pinInput.value = '';
+  } catch (err) {
+    console.error(err);
+    pinStatus.textContent = 'Incorrect PIN.';
+    pinStatus.className = 'status-msg err';
+  }
+});
 
 function subscribeToItems() {
   const ref = collection(db, ITEMS_COLLECTION);
@@ -132,7 +165,7 @@ searchInput.addEventListener('input', runSearch);
 
 function runSearch() {
   const q = searchInput.value.trim().toLowerCase();
-  let matches = allItems;
+  let matches = allItems.filter(it => !pendingDelete || it.id !== pendingDelete.id);
   if (q) {
     matches = allItems.filter(it =>
       (it.location || '').toLowerCase().includes(q) ||
@@ -144,7 +177,7 @@ function runSearch() {
 
   resultsList.innerHTML = '';
   if (!q) {
-    resultsSummary.textContent = allItems.length ? `${allItems.length} items in the archive` : '';
+    resultsSummary.textContent = matches.length ? `${matches.length} items in the archive` : '';
   } else {
     resultsSummary.textContent = `${matches.length} result${matches.length === 1 ? '' : 's'}`;
   }
@@ -215,15 +248,53 @@ function renderPlan() {
 }
 renderPlan();
 
-document.getElementById('deleteItemBtn').addEventListener('click', async () => {
+// ---------- Delete with undo ----------
+// Deleting hides the item locally and only actually removes it from
+// Firestore a few seconds later, unless the user hits Undo in that window.
+
+const UNDO_WINDOW_MS = 6000;
+let pendingDelete = null; // { id, timeoutId }
+
+const undoToast = document.getElementById('undoToast');
+const undoToastText = document.getElementById('undoToastText');
+
+function commitPendingDelete() {
+  if (!pendingDelete) return;
+  clearTimeout(pendingDelete.timeoutId);
+  const { id } = pendingDelete;
+  pendingDelete = null;
+  deleteDoc(doc(db, ITEMS_COLLECTION, id)).catch(err => console.error('Delete failed', err));
+}
+
+function scheduleDelete(item) {
+  commitPendingDelete(); // only one pending delete at a time - commit any earlier one now
+  const timeoutId = setTimeout(() => {
+    pendingDelete = null;
+    undoToast.classList.add('hidden');
+    deleteDoc(doc(db, ITEMS_COLLECTION, item.id)).catch(err => console.error('Delete failed', err));
+  }, UNDO_WINDOW_MS);
+  pendingDelete = { id: item.id, timeoutId };
+  undoToastText.textContent = `Deleted "${item.description || item.location}"`;
+  undoToast.classList.remove('hidden');
+}
+
+document.getElementById('undoBtn').addEventListener('click', () => {
+  if (!pendingDelete) return;
+  clearTimeout(pendingDelete.timeoutId);
+  pendingDelete = null;
+  undoToast.classList.add('hidden');
+  runSearch();
+});
+
+document.getElementById('deleteItemBtn').addEventListener('click', () => {
   if (!selectedItemId || !db) return;
   const item = allItems.find(it => it.id === selectedItemId);
   if (!item) return;
-  if (!confirm(`Delete "${item.description}" at ${item.location}?`)) return;
-  await deleteDoc(doc(db, ITEMS_COLLECTION, selectedItemId));
   selectedItemId = null;
   itemDetail.classList.add('hidden');
+  scheduleDelete(item);
   renderPlan();
+  runSearch();
 });
 
 // ---------- Add item ----------
@@ -348,6 +419,10 @@ const uploadForm = document.getElementById('uploadForm');
 const uploadStatus = document.getElementById('uploadStatus');
 const uploadSkipped = document.getElementById('uploadSkipped');
 
+function dupeKey(item) {
+  return [item.location, (item.description || '').toLowerCase().trim(), (item.productCode || '').toLowerCase().trim()].join('|');
+}
+
 function findHeaderKey(row, candidates) {
   const keys = Object.keys(row);
   for (const cand of candidates) {
@@ -427,6 +502,19 @@ uploadForm.addEventListener('submit', async e => {
       return;
     }
 
+    if (mode === 'add') {
+      const existingKeys = new Set(allItems.map(dupeKey));
+      const dupeCount = parsed.filter(item => existingKeys.has(dupeKey(item))).length;
+      if (dupeCount > 0) {
+        const ok = confirm(
+          `${dupeCount} of the ${parsed.length} rows in this file look identical to items already in the archive ` +
+          `(same location, description and product code) - likely because this file was uploaded before. ` +
+          `They'll be added as extra copies if you continue. Continue?`
+        );
+        if (!ok) { uploadStatus.textContent = 'Cancelled.'; return; }
+      }
+    }
+
     if (mode === 'replace') {
       const ok = confirm(`This will permanently delete all ${allItems.length} existing items and replace them with ${parsed.length} new ones. Continue?`);
       if (!ok) { uploadStatus.textContent = 'Cancelled.'; return; }
@@ -450,6 +538,44 @@ uploadForm.addEventListener('submit', async e => {
     uploadStatus.textContent = 'Error: ' + err.message;
     uploadStatus.className = 'status-msg err';
   }
+});
+
+// ---------- Export to CSV ----------
+
+const exportBtn = document.getElementById('exportBtn');
+const exportStatus = document.getElementById('exportStatus');
+
+function csvField(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+exportBtn.addEventListener('click', () => {
+  if (!allItems.length) {
+    exportStatus.textContent = 'Nothing to export yet.';
+    exportStatus.className = 'status-msg err';
+    return;
+  }
+  const header = ['Location', 'Asset description', 'Product code'];
+  const lines = [header.join(',')];
+  allItems
+    .slice()
+    .sort((a, b) => (a.location || '').localeCompare(b.location || ''))
+    .forEach(item => {
+      lines.push([csvField(item.location), csvField(item.description), csvField(item.productCode)].join(','));
+    });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `kelsey-archive-export-${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  exportStatus.textContent = `Exported ${allItems.length} items.`;
+  exportStatus.className = 'status-msg ok';
 });
 
 // ---------- Boot ----------

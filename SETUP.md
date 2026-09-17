@@ -20,13 +20,25 @@ immediately. You only need to do this Firebase setup once.
    later).
 4. Start in **production mode** (we'll set proper rules below).
 
-## 3. Turn on anonymous sign-in
+## 3. Set up the shared team PIN
 
-This lets the app authenticate every visitor automatically with no login
-screen, while still keeping the database closed to the public internet.
+The app shows a single PIN screen before anyone can see or edit archive
+data - there are no individual logins, everyone uses the same PIN. Under
+the hood this is one shared Firebase account whose password is the PIN.
 
-1. **Build > Authentication > Get started**.
-2. Under **Sign-in method**, enable **Anonymous**.
+1. **Authentication > Get started** (or **Sign-in method** if you're already
+   there).
+2. Under **Sign-in method**, enable **Email/Password**.
+3. Go to the **Users** tab > **Add user**.
+4. Email: `team@kelsey-archive.app` (this must match `SHARED_AUTH_EMAIL` in
+   `js/app.js` exactly - it's never used to send mail, it just names the
+   account). Password: your PIN, at least 6 characters (Firebase's minimum).
+5. If **Anonymous** sign-in is enabled from earlier testing, turn it off
+   (Sign-in method tab) - it's not used any more and leaving it on would let
+   someone bypass the PIN.
+
+**Changing the PIN later:** Authentication > Users > select the user > the
+⋮ menu > **Reset password**, or delete and re-add the user.
 
 ## 4. Set Firestore security rules
 
@@ -43,9 +55,10 @@ service cloud.firestore {
 }
 ```
 
-Click **Publish**. This means: anyone who has loaded the app (and so has
-been silently signed in anonymously) can read and write archive items, but
-nobody can access the database directly without going through the app.
+Click **Publish**. This means: only someone who has entered the correct PIN
+in the app (and so is signed into the shared account) can read or write
+archive items - the PIN screen is the actual security boundary, not just a
+UI nicety.
 
 ## 5. Register the web app and get your config
 

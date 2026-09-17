@@ -19,6 +19,20 @@
 </head>
 <body>
 
+<!-- PIN GATE -->
+<div id="pinGate" class="pin-gate">
+  <img src="icons/icon-192.png" alt="" class="pin-gate-logo" />
+  <h1>Kelsey Archive</h1>
+  <form id="pinForm" class="pin-gate-form">
+    <label for="pinInput">Enter the team PIN</label>
+    <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" required autofocus />
+    <button type="submit" class="btn btn-primary">Unlock</button>
+    <p id="pinStatus" class="status-msg" role="status"></p>
+  </form>
+</div>
+
+<div id="appShell" class="hidden">
+
 <header class="app-header">
   <img src="icons/icon-192.png" alt="" class="app-logo" />
   <h1>Kelsey Archive</h1>
@@ -109,6 +123,13 @@
       <p id="uploadStatus" class="status-msg" role="status"></p>
       <ul id="uploadSkipped" class="skipped-list"></ul>
     </form>
+
+    <hr class="divider" />
+
+    <h2>Backup</h2>
+    <p class="muted small">Download everything currently in the archive as a spreadsheet you can re-upload later, or keep as a safety copy.</p>
+    <button id="exportBtn" class="btn">Export to CSV</button>
+    <p id="exportStatus" class="status-msg" role="status"></p>
   </section>
 
 </main>
@@ -118,6 +139,13 @@
   <button class="nav-btn" data-tab="tab-add">Add</button>
   <button class="nav-btn" data-tab="tab-upload">Upload</button>
 </nav>
+
+<div id="undoToast" class="undo-toast hidden">
+  <span id="undoToastText"></span>
+  <button id="undoBtn" class="btn btn-small">Undo</button>
+</div>
+
+</div>
 
 <!-- EDIT MODAL -->
 <div id="editModal" class="modal-backdrop hidden">
