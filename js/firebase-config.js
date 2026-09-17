@@ -8,10 +8,10 @@
 //    Firestore security rules in SETUP.md, not by hiding this file.
 
 const FIREBASE_CONFIG = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT.firebaseapp.com',
-  projectId: 'YOUR_PROJECT',
-  storageBucket: 'YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID'
+  apiKey: 'AIzaSyD7os3J1eJuBbZBdVBQiG1UDOsM3hCyVvA',
+  authDomain: 'kelsey-archive.firebaseapp.com',
+  projectId: 'kelsey-archive',
+  storageBucket: 'kelsey-archive.firebasestorage.app',
+  messagingSenderId: '229772541025',
+  appId: '1:229772541025:web:c43e0cd5f3439343ac7e20'
 };
