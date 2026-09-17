@@ -15,7 +15,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Archive" />
 
-<link rel="stylesheet" href="css/app.css" />
+<!-- Bump ?v=N on every same-origin script/style below whenever their
+     content changes - GitHub Pages and browsers cache these fairly
+     aggressively, and without a version bump a device that already loaded
+     the app can keep running old JS/CSS indefinitely even after a fresh
+     deploy (this bit us once - see the service-worker.js fix). -->
+<link rel="stylesheet" href="css/app.css?v=2" />
 </head>
 <body>
 
@@ -188,9 +193,9 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-<script src="js/zones.js" defer></script>
-<script src="js/floorplan.js" defer></script>
-<script src="js/firebase-config.js" defer></script>
-<script type="module" src="js/app.js"></script>
+<script src="js/zones.js?v=2" defer></script>
+<script src="js/floorplan.js?v=2" defer></script>
+<script src="js/firebase-config.js?v=2" defer></script>
+<script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>

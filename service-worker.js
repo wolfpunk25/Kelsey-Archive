@@ -6,16 +6,16 @@
 // matters because workers install this as a PWA - the app shell must never
 // go stale just because it opened successfully once before.
 
-const CACHE_NAME = 'kelsey-archive-v2';
+const CACHE_NAME = 'kelsey-archive-v3';
 const SHELL_FILES = [
   './',
   'index.html',
   'manifest.webmanifest',
-  'css/app.css',
-  'js/app.js',
-  'js/zones.js',
-  'js/floorplan.js',
-  'js/firebase-config.js',
+  'css/app.css?v=2',
+  'js/app.js?v=2',
+  'js/zones.js?v=2',
+  'js/floorplan.js?v=2',
+  'js/firebase-config.js?v=2',
   'icons/icon-192.png',
   'icons/icon-512.png'
 ];
@@ -23,7 +23,9 @@ const SHELL_FILES = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(SHELL_FILES))
+      .then(cache => Promise.all(
+        SHELL_FILES.map(url => fetch(url, { cache: 'reload' }).then(resp => cache.put(url, resp)))
+      ))
       .then(() => self.skipWaiting())
   );
 });
