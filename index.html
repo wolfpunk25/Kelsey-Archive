@@ -32,8 +32,14 @@
     <div class="search-bar">
       <input id="searchInput" type="search" inputmode="search" placeholder="Search keyword, description or product code..." autocomplete="off" />
     </div>
-    <p id="resultsSummary" class="muted small"></p>
-    <ul id="resultsList" class="results-list"></ul>
+
+    <div class="plan-panel">
+      <div class="plan-panel-header">
+        <label for="planZoneSelect" class="muted small">Zone</label>
+        <select id="planZoneSelect"></select>
+      </div>
+      <div id="planContainer" class="plan-container"></div>
+    </div>
 
     <div id="itemDetail" class="item-detail hidden">
       <div class="item-detail-header">
@@ -49,13 +55,8 @@
       </div>
     </div>
 
-    <div class="plan-panel">
-      <div class="plan-panel-header">
-        <label for="planZoneSelect" class="muted small">Zone</label>
-        <select id="planZoneSelect"></select>
-      </div>
-      <div id="planContainer" class="plan-container"></div>
-    </div>
+    <p id="resultsSummary" class="muted small"></p>
+    <ul id="resultsList" class="results-list"></ul>
   </section>
 
   <!-- ADD -->
