@@ -167,11 +167,14 @@ function runSearch() {
   const q = searchInput.value.trim().toLowerCase();
   let matches = allItems.filter(it => !pendingDelete || it.id !== pendingDelete.id);
   if (q) {
-    matches = allItems.filter(it =>
-      (it.location || '').toLowerCase().includes(q) ||
-      (it.description || '').toLowerCase().includes(q) ||
-      (it.productCode || '').toLowerCase().includes(q)
-    );
+    // Match if every word in the query appears somewhere in the item, in
+    // any order - so "motor cycle jan 1920" finds "The Motor Cycle Jan
+    // June 1920 Vol XXIV" even though "jan" and "1920" aren't adjacent.
+    const tokens = q.split(/\s+/).filter(Boolean);
+    matches = matches.filter(it => {
+      const haystack = `${it.location || ''} ${it.description || ''} ${it.productCode || ''}`.toLowerCase();
+      return tokens.every(t => haystack.includes(t));
+    });
   }
   matches = matches.slice().sort((a, b) => (a.location || '').localeCompare(b.location || ''));
 
