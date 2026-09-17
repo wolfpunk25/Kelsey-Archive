@@ -1,7 +1,12 @@
 // App-shell cache only. Firestore's own network calls (and anything
 // cross-origin) are left untouched - this just lets the UI open offline.
+//
+// Network-first: always try to fetch the latest version when online, and
+// only fall back to the cached copy when the network fails (offline). This
+// matters because workers install this as a PWA - the app shell must never
+// go stale just because it opened successfully once before.
 
-const CACHE_NAME = 'kelsey-archive-v1';
+const CACHE_NAME = 'kelsey-archive-v2';
 const SHELL_FILES = [
   './',
   'index.html',
@@ -36,15 +41,12 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const network = fetch(event.request).then(resp => {
-        if (resp && resp.ok) {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
-        return resp;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(event.request).then(resp => {
+      if (resp && resp.ok) {
+        const copy = resp.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)));
+      }
+      return resp;
+    }).catch(() => caches.match(event.request))
   );
 });
