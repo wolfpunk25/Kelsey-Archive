@@ -160,12 +160,33 @@ function wireCascade(zoneSel, aisleSel, baySel) {
 const searchInput = document.getElementById('searchInput');
 const resultsList = document.getElementById('resultsList');
 const resultsSummary = document.getElementById('resultsSummary');
+const bayFilterBanner = document.getElementById('bayFilterBanner');
+const bayFilterText = document.getElementById('bayFilterText');
 
-searchInput.addEventListener('input', runSearch);
+let bayFilter = null; // { zone, aisle, bay } - set by tapping a bay on the plan
+
+searchInput.addEventListener('input', () => {
+  bayFilter = null; // typing a fresh search always leaves bay-browsing mode
+  bayFilterBanner.classList.add('hidden');
+  runSearch();
+});
+
+document.getElementById('clearBayFilterBtn').addEventListener('click', () => {
+  bayFilter = null;
+  bayFilterBanner.classList.add('hidden');
+  runSearch();
+  renderPlan();
+});
 
 function runSearch() {
   const q = searchInput.value.trim().toLowerCase();
   let matches = allItems.filter(it => !pendingDelete || it.id !== pendingDelete.id);
+
+  if (bayFilter) {
+    matches = matches.filter(it =>
+      it.zone === bayFilter.zone && it.aisle === bayFilter.aisle && it.bay === bayFilter.bay
+    );
+  }
   if (q) {
     // Match if every word in the query appears somewhere in the item, in
     // any order - so "motor cycle jan 1920" finds "The Motor Cycle Jan
@@ -179,7 +200,11 @@ function runSearch() {
   matches = matches.slice().sort((a, b) => (a.location || '').localeCompare(b.location || ''));
 
   resultsList.innerHTML = '';
-  if (!q) {
+  if (bayFilter) {
+    bayFilterText.textContent = `Showing ${matches.length} item${matches.length === 1 ? '' : 's'} in ${bayFilter.zone}-${bayFilter.aisle}-${bayFilter.bay}`;
+    bayFilterBanner.classList.remove('hidden');
+    resultsSummary.textContent = matches.length ? '' : 'Nothing stored here yet.';
+  } else if (!q) {
     resultsSummary.textContent = matches.length ? `${matches.length} items in the archive` : '';
   } else {
     resultsSummary.textContent = `${matches.length} result${matches.length === 1 ? '' : 's'}`;
@@ -223,6 +248,20 @@ fillSelect(planZoneSelect, listZoneIds());
 planZoneSelect.addEventListener('change', () => {
   selectedItemId = null;
   itemDetail.classList.add('hidden');
+  bayFilter = null;
+  bayFilterBanner.classList.add('hidden');
+  runSearch();
+  renderPlan();
+});
+
+planContainer.addEventListener('click', e => {
+  const bayEl = e.target.closest('.bay');
+  if (!bayEl) return;
+  selectedItemId = null;
+  itemDetail.classList.add('hidden');
+  bayFilter = { zone: planZoneSelect.value, aisle: bayEl.dataset.aisle, bay: bayEl.dataset.bay };
+  searchInput.value = '';
+  runSearch();
   renderPlan();
 });
 
@@ -246,6 +285,8 @@ function renderPlan() {
   let highlight = null;
   if (item && item.zone === zoneId) {
     highlight = { aisle: item.aisle, bay: item.bay, locationLabel: item.location };
+  } else if (bayFilter && bayFilter.zone === zoneId) {
+    highlight = { aisle: bayFilter.aisle, bay: bayFilter.bay, locationLabel: `${bayFilter.zone}-${bayFilter.aisle}-${bayFilter.bay}` };
   }
   renderZonePlan(planContainer, zoneId, highlight);
 }

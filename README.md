@@ -11,8 +11,11 @@ this needs before it works.
 
 - **PIN-gated** - one shared PIN for the whole team, checked against real
   Firebase auth (not just a UI prompt) - see SETUP.md.
-- **Find** - search across location, description and product code; the
-  matching bay is highlighted on the zone's floor plan.
+- **Find** - search across location, description and product code (word
+  match, any order); the matching bay is highlighted on the zone's floor
+  plan.
+- **Reverse lookup** - tap any bay on the floor plan to list everything
+  stored there, across all its shelves.
 - **Add** - add a new item, prompted for zone/aisle/bay/shelf.
 - **Edit / delete** - from any search result. Deletes have a 6-second Undo
   before they're actually committed.

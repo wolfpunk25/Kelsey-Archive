@@ -254,6 +254,23 @@ h2 { font-size: 1.05rem; margin: 0 0 12px; }
 .bay-highlight rect { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
+.zone-plan .bay { cursor: pointer; }
+.zone-plan .bay rect { transition: fill 0.1s ease; }
+.zone-plan .bay:hover rect { fill: var(--border); }
+.zone-plan .bay.bay-highlight:hover rect { fill: var(--plan-highlight); }
+
+.bay-filter-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 0;
+}
+
 .pin-gate {
   min-height: 100vh;
   min-height: 100dvh;
